@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Square-Space Joystick Calculator</title>
+    <style>
+        :root {
+            --bg: #090b10;
+            --panel: #11151c;
+            --border: #2a3241;
+            --text: #cbd5e1;
+            --text-dim: #64748b;
+            --out-x: #10b981;
+            --out-y: #f59e0b;
+            --knob: #e2e8f0;
+            --joy-radius: 80px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+        
+        body {
+            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+            background: radial-gradient(circle at 50% 30%, #1e293b 0%, var(--bg) 60%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .dashboard {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            display: grid;
+            grid-template-columns: 80px 1fr 80px;
+            gap: 2rem;
+            align-items: center;
+            box-shadow: 0 20px 60px -15px rgba(0,0,0,0.7);
+            max-width: 600px;
+            width: 100%;
+        }
+
+        .title {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 1.4rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            letter-spacing: 0.5px;
+        }
+
+        .j-area { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .j-base {
+            width: calc(var(--joy-radius) * 2 + 24px);
+            height: calc(var(--joy-radius) * 2 + 24px);
+            background: linear-gradient(145deg, #0f131a, #07090c);
+            border: 2px solid var(--border);
+            border-radius: 50%;
+            position: relative;
+            cursor: grab;
+            box-shadow: inset 0 4px 12px rgba(0,0,0,0.6), 0 0 15px rgba(59,130,246,0.1);
+            touch-action: none;
+        }
+        .j-base:active { cursor: grabbing; }
+        
+        .j-cross {
+            position: absolute; top: 50%; left: 50%;
+            width: 20px; height: 20px;
+            transform: translate(-50%, -50%);
+            background: var(--border);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .j-cross::before, .j-cross::after {
+            content: ''; position: absolute; background: var(--text-dim); opacity: 0.5;
+        }
+        .j-cross::before { width: 1px; height: 100%; left: 50%; }
+        .j-cross::after { height: 1px; width: 100%; top: 50%; }
+
+        .j-knob {
+            width: 44px; height: 44px;
+            background: radial-gradient(circle at 30% 30%, var(--knob), #94a3b8);
+            border-radius: 50%;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5), 0 0 0 4px rgba(255,255,255,0.05);
+            pointer-events: none;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .j-readout {
+            font-family: monospace;
+            font-size: 0.95rem;
+            color: var(--text-dim);
+            background: rgba(0,0,0,0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            direction: ltr;
+        }
+
+        .v-bar-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+        .bar-label { font-size: 0.85rem; font-weight: 600; color: var(--text); }
+        .bar-track {
+            width: 16px; height: 240px;
+            background: #0a0d12;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+        .bar-center {
+            position: absolute; top: 50%; left: 0; right: 0;
+            height: 2px; background: var(--text-dim); opacity: 0.4;
+            transform: translateY(-50%);
+        }
+        .bar-fill {
+            position: absolute; left: 0; right: 0;
+            background: var(--accent);
+            transition: height 0.05s, top 0.05s;
+        }
+        .bar-knob {
+            width: 26px; height: 12px;
+            background: var(--knob);
+            border-radius: 6px;
+            position: absolute; left: 50%; transform: translateX(-50%);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.6);
+            transition: top 0.05s;
+        }
+        .bar-val {
+            font-family: monospace;
+            font-size: 1.1rem;
+            font-weight: 700;
+            direction: ltr;
+        }
+
+        .col-x .bar-fill { background: linear-gradient(to top, var(--out-x), #34d399); }
+        .col-y .bar-fill { background: linear-gradient(to top, var(--out-y), #fbbf24); }
+        .col-x .bar-knob { background: var(--out-x); }
+        .col-y .bar-knob { background: var(--out-y); }
+        .col-x .bar-val { color: var(--out-x); }
+        .col-y .bar-val { color: var(--out-y); }
+
+        .note {
+            grid-column: 1 / -1;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 500px) {
+            .dashboard { grid-template-columns: 1fr; padding: 1.2rem; gap: 1.2rem; }
+            .j-area { order: 2; }
+            .output-row { display: flex; justify-content: space-around; order: 1; width: 100%; }
+            .bar-track { height: 180px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="title">🎮 Square-Space Rotation</div>
+
+    <div class="v-bar-col col-x">
+        <span class="bar-label">x'</span>
+        <div class="bar-track">
+            <div class="bar-center"></div>
+            <div class="bar-fill" id="fillX"></div>
+            <div class="bar-knob" id="knobX"></div>
+        </div>
+        <span class="bar-val" id="valX">0.00</span>
+    </div>
+
+    <div class="j-area">
+        <div class="j-base" id="jBase">
+            <div class="j-cross"></div>
+            <div class="j-knob" id="jKnob"></div>
+        </div>
+        <div class="j-readout">X: <span id="readX">0</span> | Y: <span id="readY">0</span></div>
+    </div>
+
+    <div class="v-bar-col col-y">
+        <span class="bar-label">y'</span>
+        <div class="bar-track">
+            <div class="bar-center"></div>
+            <div class="bar-fill" id="fillY"></div>
+            <div class="bar-knob" id="knobY"></div>
+        </div>
+        <span class="bar-val" id="valY">0.00</span>
+    </div>
+
+    <div class="note">جوی‌استیک را بکشید. مقادیر به‌صورت زنده محاسبه می‌شوند. با رها کردن به مرکز بازمی‌گردد.</div>
+</div>
+
+<script>
+    const jBase = document.getElementById('jBase');
+    const jKnob = document.getElementById('jKnob');
+    const readX = document.getElementById('readX');
+    const readY = document.getElementById('readY');
+
+    const fillX = document.getElementById('fillX');
+    const knobX = document.getElementById('knobX');
+    const valX = document.getElementById('valX');
+
+    const fillY = document.getElementById('fillY');
+    const knobY = document.getElementById('knobY');
+    const valY = document.getElementById('valY');
+
+    const MAX_R = 80;
+    let isDragging = false;
+    let centerX = 0; // ✅ فقط یکبار در pointerdown محاسبه می‌شود
+    let centerY = 0;
+
+    function calculateSquareRotation(x, y) {
+        const m = Math.max(Math.abs(x), Math.abs(y));
+        if (m === 0) return { x: 0, y: 0 };
+
+        const theta = Math.atan2(y, x);
+        const theta2 = theta - (Math.PI / 4);
+
+        let u = Math.cos(theta2);
+        let v = Math.sin(theta2);
+
+        const k = Math.max(Math.abs(u), Math.abs(v));
+        u /= k;
+        v /= k;
+
+        //return { x: u * m, y: v * m };
+		return { x: -u * m, y: -v * m };
+    }
+
+    function updateJoystick(dx, dy) {
+        // ✅ transform فقط offset نسبی است، نه موقعیت مطلق
+        jKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+    }
+
+    function updateBars(xVal, yVal) {
+        const setBar = (fill, knob, valEl, v) => {
+            const absV = Math.abs(v);
+            const hPct = (absV / 100) * 50;
+            const topPct = 50 - (v / 2);
+
+            fill.style.height = `${hPct}%`;
+            if (v >= 0) { fill.style.top = `${50 - hPct}%`; } 
+            else { fill.style.top = `50%`; }
+
+            knob.style.top = `${topPct}%`;
+            valEl.textContent = v.toFixed(2);
+        };
+        setBar(fillY, knobY, valY, xVal);
+        setBar(fillX, knobX, valX, yVal);
+    }
+
+    function onStart(e) {
+        e.preventDefault();
+        jBase.setPointerCapture(e.pointerId);
+        isDragging = true;
+        jKnob.style.transition = 'none';
+        
+        // ✅ مرکز را فقط از jBase بگیریم (که transform ندارد)
+        const rect = jBase.getBoundingClientRect();
+        centerX = rect.left + rect.width / 2;
+        centerY = rect.top + rect.height / 2;
+        
+        handleMove(e);
+    }
+
+    function handleMove(e) {
+        if (!isDragging) return;
+        e.preventDefault();
+
+        let dx = e.clientX - centerX;
+        let dy = e.clientY - centerY;
+        
+        // محدودسازی مربعی
+        dx = Math.max(-MAX_R, Math.min(MAX_R, dx));
+        dy = Math.max(-MAX_R, Math.min(MAX_R, dy));
+        
+        updateJoystick(dx, dy);
+        
+        const inpX = (dx / MAX_R) * 100;
+        const inpY = -(dy / MAX_R) * 100;
+        
+        readX.textContent = inpX.toFixed(1);
+        readY.textContent = inpY.toFixed(1);
+        
+        const out = calculateSquareRotation(inpX, inpY);
+        updateBars(out.x, out.y);
+    }
+
+    function onEnd(e) {
+        if (!isDragging) return;
+        isDragging = false;
+        jBase.releasePointerCapture(e.pointerId);
+        
+        // ✅ ریست کامل transform به حالت اولیه
+        jKnob.style.transition = 'transform 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+        jKnob.style.transform = 'translate(-50%, -50%)';
+        
+        readX.textContent = '0';
+        readY.textContent = '0';
+        updateBars(0, 0);
+    }
+
+    jBase.addEventListener('pointerdown', onStart);
+    jBase.addEventListener('pointermove', handleMove);
+    jBase.addEventListener('pointerup', onEnd);
+    jBase.addEventListener('pointercancel', onEnd);
+
+    updateBars(0, 0);
+</script>
+
+</body>
+</html>
