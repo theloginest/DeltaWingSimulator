@@ -19,20 +19,16 @@
 
         * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
         
-        html, body {
-            height: 100%;
-            overflow: hidden;
-        }
-        
         body {
             font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
             background: radial-gradient(circle at 50% 30%, #1e293b 0%, var(--bg) 60%);
             color: var(--text);
+            min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
             padding: 20px;
-            touch-action: none;
+            overflow: hidden;
         }
 
         .dashboard {
@@ -42,6 +38,10 @@
             padding: 2rem;
             display: grid;
             grid-template-columns: 80px 1fr 80px;
+            grid-template-areas:
+                "title title title"
+                "x     joy   y"
+                "note  note  note";
             gap: 2rem;
             align-items: center;
             box-shadow: 0 20px 60px -15px rgba(0,0,0,0.7);
@@ -50,7 +50,7 @@
         }
 
         .title {
-            grid-column: 1 / -1;
+            grid-area: title;
             text-align: center;
             font-size: 1.4rem;
             font-weight: 600;
@@ -58,7 +58,13 @@
             letter-spacing: 0.5px;
         }
 
-        .j-area { display: flex; flex-direction: column; align-items: center; gap: 1rem; }
+        .j-area {
+            grid-area: joy;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1rem;
+        }
         .j-base {
             width: calc(var(--joy-radius) * 2 + 24px);
             height: calc(var(--joy-radius) * 2 + 24px);
@@ -149,6 +155,9 @@
             direction: ltr;
         }
 
+        .col-x { grid-area: x; }
+        .col-y { grid-area: y; }
+
         .col-x .bar-fill { background: linear-gradient(to top, var(--out-x), #34d399); }
         .col-y .bar-fill { background: linear-gradient(to top, var(--out-y), #fbbf24); }
         .col-x .bar-knob { background: var(--out-x); }
@@ -157,7 +166,7 @@
         .col-y .bar-val { color: var(--out-y); }
 
         .note {
-            grid-column: 1 / -1;
+            grid-area: note;
             text-align: center;
             font-size: 0.75rem;
             color: var(--text-dim);
@@ -165,82 +174,105 @@
             line-height: 1.4;
         }
 
-        /* ===== موبایل ===== */
+        /* wrapper فقط برای موبایل استفاده می‌شود */
+        .output-row { display: contents; }
+
+        /* موبایل: جوی‌استیک پایین، نوارها بالا */
         @media (max-width: 600px) {
-            body { padding: 8px; }
+            body {
+                padding: 0;
+                align-items: stretch;
+            }
             
             .dashboard {
                 grid-template-columns: 1fr;
-                grid-template-rows: auto 1fr auto;
+                grid-template-areas:
+                    "title"
+                    "bars"
+                    "joy"
+                    "note";
+                height: 100dvh;
+                max-height: 100dvh;
+                border-radius: 0;
                 padding: 1rem;
-                gap: 1rem;
-                width: 100%;
-                height: calc(100dvh - 16px);
-                max-height: calc(100dvh - 16px);
+                gap: 0.8rem;
+                max-width: 100%;
             }
 
             .title {
                 font-size: 1.1rem;
                 margin-bottom: 0;
-                padding-bottom: 0.5rem;
-                border-bottom: 1px solid var(--border);
+                padding: 0.5rem 0;
             }
 
-            /* لول‌ها بالا */
-            .bars-row {
+            .output-row {
                 display: flex;
+                grid-area: bars;
                 justify-content: space-around;
-                align-items: stretch;
-                gap: 2rem;
-                order: 1;
-                grid-row: 2;
+                align-items: center;
+                gap: 1rem;
             }
 
             .v-bar-col {
                 flex: 1;
+                max-width: 140px;
             }
 
             .bar-track {
-                height: 100%;
-                max-height: 280px;
+                height: 140px;
             }
 
-            /* استیک پایین */
+            .bar-label {
+                font-size: 0.9rem;
+            }
+
+            .bar-val {
+                font-size: 1rem;
+            }
+
             .j-area {
-                order: 2;
-                grid-row: 3;
+                justify-content: flex-end;
+                flex: 1;
             }
 
-            :root { --joy-radius: 70px; }
-            
             .j-base {
-                width: calc(var(--joy-radius) * 2 + 20px);
-                height: calc(var(--joy-radius) * 2 + 20px);
+                --joy-radius: 70px;
             }
 
-            .j-knob { width: 40px; height: 40px; }
+            .j-readout {
+                font-size: 0.85rem;
+                padding: 5px 10px;
+            }
 
-            .note { display: none; }
+            .note {
+                font-size: 0.7rem;
+                margin-top: 0;
+            }
+        }
+
+        /* موبایل کوچک‌تر */
+        @media (max-width: 400px) {
+            .dashboard {
+                padding: 0.8rem;
+                gap: 0.6rem;
+            }
+
+            .bar-track {
+                height: 120px;
+            }
+
+            .j-base {
+                --joy-radius: 60px;
+            }
         }
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <div class="title">🎮 Square-Space Rotation</div>
+    <div class="title">🎮 Delta wing simulator</div>
 
-    <!-- در دسکتاپ: سه ستونه | در موبایل: ردیف بالا -->
-    <div class="bars-row">
-        <div class="v-bar-col col-y">
-            <span class="bar-label">y'</span>
-            <div class="bar-track">
-                <div class="bar-center"></div>
-                <div class="bar-fill" id="fillY"></div>
-                <div class="bar-knob" id="knobY"></div>
-            </div>
-            <span class="bar-val" id="valY">0.00</span>
-        </div>
-
+    <div class="output-row">
         <div class="v-bar-col col-x">
             <span class="bar-label">x'</span>
             <div class="bar-track">
@@ -250,9 +282,18 @@
             </div>
             <span class="bar-val" id="valX">0.00</span>
         </div>
+
+        <div class="v-bar-col col-y">
+            <span class="bar-label">y'</span>
+            <div class="bar-track">
+                <div class="bar-center"></div>
+                <div class="bar-fill" id="fillY"></div>
+                <div class="bar-knob" id="knobY"></div>
+            </div>
+            <span class="bar-val" id="valY">0.00</span>
+        </div>
     </div>
 
-    <!-- در دسکتاپ: وسط | در موبایل: پایین -->
     <div class="j-area">
         <div class="j-base" id="jBase">
             <div class="j-cross"></div>
@@ -261,7 +302,7 @@
         <div class="j-readout">X: <span id="readX">0</span> | Y: <span id="readY">0</span></div>
     </div>
 
-    <div class="note">جوی‌استیک را بکشید. با رها کردن به مرکز بازمی‌گردد.</div>
+    <div class="note">جوی‌استیک را بکشید. مقادیر به‌صورت زنده محاسبه می‌شوند. با رها کردن به مرکز بازمی‌گردد.</div>
 </div>
 
 <script>
